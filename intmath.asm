@@ -48,7 +48,7 @@ loop:
    sbc OPER2+1
    sta OPER1+1
    bcs fit
-   bna next
+   bra next
 fit:
    inc RES1
    ; fallthrough to .next
