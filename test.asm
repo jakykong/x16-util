@@ -14,22 +14,23 @@ NEWLINE = $0D
 .include "intmath.asm"
 
 start:
-   ; output a newline so we see some activity on run
-   lda #NEWLINE
-   jsr CHROUT
+   ; Some arbitrary output for visual confirmation the test ran.
    lda #64
+   jsr CHROUT
+   lda #NEWLINE
    jsr CHROUT
    
    ; test division - 1 divided by 1 should = 1
-   lda #$01
+   lda #$0A
    sta OPER1
-   sta OPER2
-   lda #00
+   lda #$00
    sta OPER1+1
+   lda #$02
+   sta OPER2
+   lda #$00
    sta OPER2+1
    jsr div16 
    rts
-
 
 
 

@@ -2,124 +2,90 @@
 ; Code by Jack Mudge <jack@mudge.dev>, but credited as needed.
 ; Anything that is not otherwise licensed (see in-line credits) is released
 ; to the public domain. No warranties, guarantees, etc.
-;
-; Reserve $00D4-$00DF for this code as written.
-; $00D4 - Operand1 LOW
-; $00D5 - Operand1 HIGH
-; $00D6 - Operand2 LOW
-; $00D7 - Operand2 HIGH
-; $00D8 - Return1 LOW (Result)
-; $00D9 - Return1 HIGH
-; $00DA - Return2 LOW (Modulus, etc.)
-; $00DB - Return2 HIGH
-; $00DC-$00DF - Working area
 
 OPER1 = $44
 OPER2 = $46
 RES1 = $48
-RES2 = $4A
-ERROR = $4C
-WORK = $4D
+ERROR = $4A
 
+; Convenience symbols for division
+DIVIDEND = OPER1
+DIVISOR = OPER2
+QUOTIENT = RES1
 
-
-; Unsigned 16-bit Division With Modulus
-; Return1 = Operand1 / Operand2
-; Return2 = Operand1 MOD Operand2 (remainder)
+; Unsigned 16-bit Division With Remainder
+; Inputs:  OPER1 = Dividend
+;          OPER2 = Divisor
+; Outputs: OPER1 = Quotient (result)
+;          RES1  = Remainder
+;          ERROR = 1 if div/0, 0 otherwise.
 .proc div16
-   ; Check if OPER2 == 0
-   lda OPER2
+   ; Check if DIVISOR == 0
+   lda DIVISOR
    bne :+
-   lda OPER2+1
+   lda DIVISOR+1
    bne :+
    jmp divzero
    : ; not divzero
-   
-   ; at most 16 steps of the division
-   ldx #16
+
    ; result starts at 0
    lda #0
-   sta RES1
-   sta RES1+1
+   sta QUOTIENT
+   sta QUOTIENT+1
 
-   ; OPER2 needs to be positioned for long division,
-   ; i.e., high bit needs to be the most significant 1.
-   lda OPER2
-   bmi loop
-   ; else fall through to shiftdivisor
-shiftdivisor:
-   ; shift OPER2 until MSB is set
-   ; Guaranteed by zero check at start of proc.
-   asl OPER2
-   rol OPER2+1
-   bmi loop
-   bra shiftdivisor
+   ; Always start with at least one trial subtraction
+   ldx #1
+
+   ; Rotate DIVISOR until high bit = 1 so subtractions are positioned correctly
+   : ; start rotate loop
+   lda DIVISOR+1
+   bmi :+
+   asl DIVISOR
+   rol DIVISOR+1
+   inx ; number of shifts here corresponds to number of subtraction steps
+   bra :-
+   : ; end rotate loop
+
 loop:
-   ; at each stage of loop, try to subtract.
-   ; if subtract borrows, zero instances fit:
-   ;     treat current value as remainder & dividend
-   ;     next digit in result is 0
-   ; if subtract doesn't borrow, one instance fit:
-   ;     treat subtracted value as remainder & dividend
-   ;     next digit in result is 1
-   ; shift divisor right for next digit & continue loop
+   ; Make next lowest bit of result available for setting in next iteration
+   ; on first iteration will rotate #$0000
+   asl QUOTIENT
+   rol QUOTIENT+1
 
-   ; subtract OPER1 - OPER2 -> WORK
+   ; try subtraction
    sec
-   lda OPER1
-   sbc OPER2
-   sta WORK
-   lda OPER1+1
-   sbc OPER2+1
-   sta WORK+1
-   
-   bcs subnoborrow
-   ; fall through to subborrow
-subborrow:
-   ; subtraction carried: 
-   ; next digit of result is 0
-   asl RES1
-   rol RES1+1
-   ; keep current OPER1
-   bra next
+   lda DIVIDEND
+   sbc DIVISOR
+   tay
+   lda DIVIDEND+1
+   sbc DIVISOR+1
 
-subnoborrow:
-   ; subtraction didn't carry
-   ; next digit of result is 1
-   asl RES1
-   rol RES1+1
-   inc RES1
-   ; use subtraction result as next dividend
-   lda WORK
-   sta OPER1
-   lda WORK+1
-   sta OPER1+1
-   ; fall through to next
+   ; result bit = 1 and new remainder if subtraction succeeds
+   bcc :+
+   inc QUOTIENT
+   sty DIVIDEND
+   sta DIVIDEND+1
+   :
 
-next:
-   ; rotate OPER2 right for next subtraction
-   lsr OPER2+1
-   ror OPER2
-   ; loop until all bits calculated
+   ; shift DIVISOR into next position
+   lsr DIVISOR+1
+   ror DIVISOR
+
    dex
    bne loop
-   ; fall through to done
 
 done:
-   ; remainder in OPER1
-   lda OPER1
-   sta RES2
-   lda OPER1+1
-   sta RES2+1
-   ; clear any error flags
-   lda #$00
-   sta ERROR
+   ; DIVIDEND has accumulated the remainder
+   ; QUOTIENT should already contain the divided result.
+   lda #0
+   sta ERROR ; no errors
    rts
+
 
 divzero:
    ; handle division by zero by flagging error
    lda #$01
-   sta ERROR
+   sta ERROR ; error occurred
    rts
 .endproc
 
