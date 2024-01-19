@@ -7,30 +7,35 @@
 .segment "CODE"
    jmp start         ; absolute
 
-CHROUT = $FFD2
+; CHROUT = $FFD2 ; also defined in io.asm for now
 NEWLINE = $0D
 
 
-.include "intmath.asm"
+.include "util.asm"
 
 start:
-   ; Some arbitrary output for visual confirmation the test ran.
-   lda #64
+   ; test printing some numbers
+
+   ; print 65535
+   lda #$FF
+   ldy #$FF
+   jsr pru1610
+   lda #NEWLINE
    jsr CHROUT
+
+   ; print 0
+   lda #$00
+   ldy #$00
+   jsr pru1610
+   lda #NEWLINE
+   jsr CHROUT
+
+   ; print 9876
+   lda #$94
+   ldy #$26
+   jsr pru1610
    lda #NEWLINE
    jsr CHROUT
    
-   ; test division - 1 divided by 1 should = 1
-   lda #$0A
-   sta OPER1
-   lda #$00
-   sta OPER1+1
-   lda #$02
-   sta OPER2
-   lda #$00
-   sta OPER2+1
-   jsr div16 
-   rts
-
-
+   rts 
 

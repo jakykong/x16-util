@@ -19,7 +19,13 @@ QUOTIENT = RES1
 ; Outputs: OPER1 = Quotient (result)
 ;          RES1  = Remainder
 ;          ERROR = 1 if div/0, 0 otherwise.
+;          Registers: A, X, Y unchanged
 .proc div16
+   ; save register state
+   pha
+   phx
+   phy
+
    ; Check if DIVISOR == 0
    lda DIVISOR
    bne :+
@@ -79,6 +85,9 @@ done:
    ; QUOTIENT should already contain the divided result.
    lda #0
    sta ERROR ; no errors
+   ply
+   plx
+   pla
    rts
 
 
@@ -86,8 +95,10 @@ divzero:
    ; handle division by zero by flagging error
    lda #$01
    sta ERROR ; error occurred
+   ply
+   plx
+   pla
    rts
 .endproc
-
 
 
