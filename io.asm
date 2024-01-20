@@ -14,6 +14,7 @@
 CHROUT = $FFD2
 
 
+; PRint Unsigned 16 bit in Base 10
 .proc pru1610
    ldx #0
    

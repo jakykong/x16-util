@@ -14,6 +14,11 @@ DIVIDEND = OPER1
 DIVISOR = OPER2
 QUOTIENT = RES1
 
+; Convenience symbols for multiplication
+MULTIPLICAND = OPER1
+MULTIPLIER = OPER2
+PRODUCT = RES1
+
 ; Unsigned 16-bit Division With Remainder
 ; Inputs:  OPER1 = Dividend
 ;          OPER2 = Divisor
@@ -21,7 +26,8 @@ QUOTIENT = RES1
 ;          RES1  = Remainder
 ;          ERROR = 1 if div/0, 0 otherwise.
 ;          Registers: A, X, Y unchanged
-.proc div16
+; .ifref div16 ; Why doesn't this work?
+div16:
    ; save register state
    pha
    phx
@@ -32,13 +38,12 @@ QUOTIENT = RES1
    bne :+
    lda DIVISOR+1
    bne :+
-   jmp divzero
+   jmp @divzero
    : ; not divzero
 
    ; result starts at 0
-   lda #0
-   sta QUOTIENT
-   sta QUOTIENT+1
+   stz QUOTIENT
+   stz QUOTIENT+1
 
    ; Always start with at least one trial subtraction
    ldx #1
@@ -53,7 +58,7 @@ QUOTIENT = RES1
    bra :-
    : ; end rotate loop
 
-loop:
+@loop:
    ; Make next lowest bit of result available for setting in next iteration
    ; on first iteration will rotate #$0000
    asl QUOTIENT
@@ -79,20 +84,19 @@ loop:
    ror DIVISOR
 
    dex
-   bne loop
+   bne @loop
 
-done:
+@done:
    ; DIVIDEND has accumulated the remainder
    ; QUOTIENT should already contain the divided result.
-   lda #0
-   sta ERROR ; no errors
+   stz ERROR ; no errors
    ply
    plx
    pla
    rts
 
 
-divzero:
+@divzero:
    ; handle division by zero by flagging error
    lda #$01
    sta ERROR ; error occurred
@@ -100,6 +104,48 @@ divzero:
    plx
    pla
    rts
-.endproc
+;.endif ; .ifref div16
+
+
+; Unsigned 16-bit multiplication
+; Inputs: OPER1 = MULTIPLICAND
+;         OPER2 = MULTIPLIER
+; Outputs: RES1 = PRODUCT (OPER1 * OPER2)
+;          ERROR = 1 if integer overflow, 0 otherwise
+; .ifref mulu16 ; Why doesn't this work?
+mulu16:
+    ldx #16
+    stz PRODUCT
+    stz PRODUCT+1
+
+@loop:
+    asl PRODUCT
+    rol PRODUCT+1
+
+    asl MULTIPLIER
+    rol MULTIPLIER+1
+    bcc @skipadd
+    
+    clc
+    lda PRODUCT
+    adc MULTIPLICAND
+    sta PRODUCT
+    lda PRODUCT+1
+    adc MULTIPLICAND+1
+    sta PRODUCT+1
+    bcs @overflow
+
+@skipadd:
+    dex
+    bne @loop
+
+    stz ERROR
+    rts
+
+@overflow: 
+    lda #1
+    sta ERROR
+    rts
+; .endif .ifref mulu16
 
 
