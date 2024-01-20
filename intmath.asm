@@ -3,10 +3,11 @@
 ; Anything that is not otherwise licensed (see in-line credits) is released
 ; to the public domain. No warranties, guarantees, etc.
 
-OPER1 = $44
-OPER2 = $46
-RES1 = $48
-ERROR = $4A
+; Reserved memory for integer math library
+OPER1 = $D4
+OPER2 = $D6
+RES1 = $D8
+ERROR = $DA ; 1byte
 
 ; Convenience symbols for division
 DIVIDEND = OPER1
