@@ -7,9 +7,7 @@
 .segment "CODE"
    jmp start         ; absolute
 
-CHROUT = $FFD2
 NEWLINE = $0D
-
 
 .include "util.asm"
 
