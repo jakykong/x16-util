@@ -1,20 +1,47 @@
+.ifndef __io__
+__io__ = 1
 ; I/O routines targeting the Commander X16
 ;
-
 ; Dependencies (be sure they're included somewhere):
+; .include "cbm_kernal.asm" ; from ca65\asminc (CHROUT)
 ; .include "intmath.asm"
 
-; Print a 16-bit unsigned number as base 10
+
+
+; address register
+io_addr_reg: .byte $00,$00
+
+
+; PRint Zero-terminated STRing
+; Inputs: A - low byte of starting address
+;         Y - high byte of starting address
+; Outputs: Side effect - string printed to terminal
+.proc przstr
+   sta io_addr_reg
+   sty io_addr_reg+1
+   ldx #0
+
+loop:
+   lda io_addr_reg,x
+   cmp #0
+   beq end
+   jsr CHROUT
+   inx
+   bne loop
+
+end:
+   rts
+.endproc ; .proc przstr
+
+   
+
+
+; PRint Unsigned 16 bit as Base 10
 ; Inputs: A - low byte
 ;         Y - high byte
 ; Outputs: Side effect - decimal digits printed to terminal
 ;          No zero padding - use pru1610z 
 ; 
-
-CHROUT = $FFD2
-
-
-; PRint Unsigned 16 bit in Base 10
 .proc pru1610
    ldx #0
    
@@ -57,6 +84,7 @@ print:
 
    rts
 
-.endproc
+.endproc ; .proc pru1610
 
 
+.endif ; .ifndef __io__

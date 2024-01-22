@@ -1,3 +1,10 @@
-*~
-*.PRG
+# Screenshots saved by x16emu
+*.png
+
+# Output and intermediate build files
 *.list
+*.o
+*.PRG
+
+# Vim backup files
+*~
